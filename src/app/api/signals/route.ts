@@ -118,7 +118,8 @@ export async function GET(request: NextRequest) {
             `SELECT s.id, s.currency_pair AS currencyPair, s.direction, s.action, s.entry_price AS entryPrice, s.stop_loss AS stopLoss, s.take_profit AS takeProfit, COALESCE(s.lot_size, 0) AS lotSize, s.status, s.created_at
              FROM signals s
              JOIN followers f ON f.signal_id = s.id
-             WHERE f.follower_key = ? AND f.status = 'ACTIVE' ${statusWhere} AND (f.last_seen IS NULL OR f.last_seen < s.created_at)
+             JOIN follower_accounts fa ON fa.follower_key = f.follower_key
+             WHERE f.follower_key = ? AND f.status = 'ACTIVE' AND fa.copy_trading_enabled = 1 ${statusWhere} AND (f.last_seen IS NULL OR f.last_seen < s.created_at)
              ORDER BY s.created_at DESC
              LIMIT 1`,
             params
@@ -134,13 +135,13 @@ export async function GET(request: NextRequest) {
               [now, followerKey, ...signalIds]
             );
           }
-        } catch (sqlErr) {
           if (isMissingActionColumnError(sqlErr)) {
             const [rows] = await sqlQuery(
               `SELECT s.id, s.currency_pair AS currencyPair, s.direction, s.entry_price AS entryPrice, s.stop_loss AS stopLoss, s.take_profit AS takeProfit, s.status, s.created_at
                FROM signals s
                JOIN followers f ON f.signal_id = s.id
-               WHERE f.follower_key = ? AND f.status = 'ACTIVE' AND s.status = 'PENDING' AND (f.last_seen IS NULL OR f.last_seen < s.created_at)
+               JOIN follower_accounts fa ON fa.follower_key = f.follower_key
+               WHERE f.follower_key = ? AND f.status = 'ACTIVE' AND fa.copy_trading_enabled = 1 AND s.status = 'PENDING' AND (f.last_seen IS NULL OR f.last_seen < s.created_at)
                ORDER BY s.created_at DESC
                LIMIT 1`,
               [followerKey]

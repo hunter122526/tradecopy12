@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { TradeCommandCenter } from '@/components/trade/TradeCommandCenter';
 import { ConnectionMonitor } from '@/components/dashboard/ConnectionMonitor';
 import { FollowerTerminal } from '@/components/dashboard/FollowerTerminal';
+import FollowersDashboard from '@/components/dashboard/FollowersDashboard';
 import { LedgerLog } from '@/components/dashboard/LedgerLog';
 import { ForexRatesPanel } from '@/components/dashboard/ForexRatesPanel';
 import { Toaster } from '@/components/ui/toaster';
@@ -161,6 +162,7 @@ export function ResponsiveHome() {
                   </div>
                   <div className="col-span-12 xl:col-span-6 space-y-6">
                     <FollowerTerminal />
+                    <FollowersDashboard />
                     <ConnectionMonitor />
                   </div>
                   <div className="col-span-12">

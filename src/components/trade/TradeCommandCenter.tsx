@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer } from "@/components/ui/chart";
+import TradingViewChart from '@/components/ui/TradingViewChart';
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useFirebaseApp } from "@/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -962,15 +963,10 @@ bool AckSignal(const string signalId)
                 </div>
 
                 <div className="mt-4 h-72">
-                  <ChartContainer config={{ price: { label: "Price" } }} className="h-full">
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
-                      <XAxis dataKey="time" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <RechartsTooltip contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', borderColor: 'rgba(148,163,184,0.25)' }} />
-                      <Line type="monotone" dataKey="price" stroke={lineColor} strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ChartContainer>
+                  <div className="h-full">
+                    {/* Candlestick chart showing real-market candles */}
+                    <TradingViewChart symbol={pair} timeframe={selectedTimeframe} />
+                  </div>
                 </div>
               </div>
 

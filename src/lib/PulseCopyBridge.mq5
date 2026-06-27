@@ -10,6 +10,7 @@
 #include <Trade\Trade.mqh>
 
 input string ApiUrl = "https://www.igrowlearningsociety.in/api/signals";
+input string TradesApiUrl = "https://www.igrowlearningsociety.in/api/followers/trades";
 input string FollowerKey = "";
 input int    RequestTimeoutMs = 5000;
 input int    PollIntervalSec = 5;
@@ -325,6 +326,14 @@ bool ExecuteSignal(const string currencyPair, const string direction, double ent
    }
 
    Print("OrderSend result: retcode=", result.retcode, " deal=", result.deal, " price=", DoubleToString(price, _Digits));
+
+   // Report executed trade to server (best-effort). profitLoss unknown at open, send 0.
+   if(StringLen(TrimString(FollowerKey)) > 0)
+   {
+      if(!ReportTrade(TrimString(FollowerKey), currencyPair, direction, OrderVolume, price, 0.0))
+         Print("ReportTrade: failed to report open trade for ", currencyPair);
+   }
+
    return true;
 }
 
@@ -353,6 +362,15 @@ bool ExecuteCloseSignal(const string currencyPair)
    }
 
    Print("Close order requested for position: ", currencyPair, " ticket=", ticket);
+
+   // Report close to server (best-effort). price/profit unknown here; send current market quote and 0 profit.
+   double closePrice = SymbolInfoDouble(currencyPair, SYMBOL_BID);
+   if(StringLen(TrimString(FollowerKey)) > 0)
+   {
+      if(!ReportTrade(TrimString(FollowerKey), currencyPair, "CLOSE", OrderVolume, closePrice, 0.0))
+         Print("ReportTrade: failed to report close for ", currencyPair);
+   }
+
    return true;
 }
 
@@ -376,5 +394,36 @@ bool AckSignal(const string signalId)
 
    string response = CharArrayToString(result);
    Print("Ack response: ", response);
+   return StringFind(response, "\"success\":true") >= 0;
+}
+
+bool ReportTrade(const string followerKey, const string symbol, const string side, double volume, double price, double profitLoss)
+{
+   if(StringLen(followerKey) == 0 || StringLen(symbol) == 0)
+      return false;
+
+   string json = "{";
+   json += "\"followerKey\":\"" + followerKey + "\",";
+   json += "\"symbol\":\"" + symbol + "\",";
+   json += "\"side\":\"" + side + "\",";
+   json += "\"volume\":" + DoubleToString(volume, 2) + ",";
+   json += "\"price\":" + DoubleToString(price, _Digits) + ",";
+   json += "\"profitLoss\":" + DoubleToString(profitLoss, 2);
+   json += "}";
+
+   uchar requestData[];
+   StringToCharArray(json, requestData);
+
+   uchar result[];
+   string resultHeaders;
+   int status = WebRequest("POST", TradesApiUrl, "Content-Type: application/json\r\n", RequestTimeoutMs, requestData, result, resultHeaders);
+   if(status != 200)
+   {
+      Print("ReportTrade failed, HTTP status=", status);
+      return false;
+   }
+
+   string response = CharArrayToString(result);
+   Print("ReportTrade response: ", response);
    return StringFind(response, "\"success\":true") >= 0;
 }
